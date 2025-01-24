@@ -2,6 +2,7 @@
 Image to braille/ascii web app
 
 Color Logic by https://github.com/TheFel0x/img2braille?tab=readme-ov-file
+
 Ditherers by https://github.com/hbldh/hitherdither/tree/master
 
 
