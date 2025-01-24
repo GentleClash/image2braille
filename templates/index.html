@@ -1,0 +1,115 @@
+<html>
+<head>
+    <title>img to ascii</title>
+    <script src = "static/index.js"></script>
+    <style>
+        .controls {
+            max-width: 300px;
+            margin: 20px auto;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .input-group {
+            margin-bottom: 10px;
+        }
+        
+        .input-group-text {
+            border: 1px solid #ced4da;
+            padding: 5px 10px;
+            margin-bottom: 5px;
+        }
+        
+        .form-control, .form-select {
+            width: 100%;
+            padding: 5px;
+            margin-bottom: 5px;
+        }
+        
+        .form-check {
+            margin: 10px 0;
+        }
+        
+        .ascii-preview {
+            text-align: center;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+        
+        #asciiPreview {
+            display: inline-block;
+            overflow-x: auto;
+            text-align: left;
+            margin: 0 auto;
+        }
+
+        #copyBtn {
+            display: block;
+            margin: 20px auto;
+        }
+
+    </style>
+</head>
+
+
+<body>
+    <div class = "controls">
+                    <div class = "input-group">
+                        <input type = "file" class = "form-control" id = "fileInput" accept = "image/*">
+                        <label class = "input-group-text" for = "fileInput">Choose file</label>
+                    </div>
+                    <div class="input-group">
+                        <p class="input-group-text">ASCII Width</p>
+                        <input type="number" class="form-control" id="asciiWidth" min="2"  value="100" placeholder="ASCII Width"> <br/>
+                        <p class="input-group-text">Threshold</p>
+                        <input type="range" class="form-control" id="threshold" min="2" max = "256" value="128" placeholder="Threshold"><br/>
+                    </div>
+                    <p class="input-group-text">Ditherer</p>
+                    <select class="form-select" id="dithererName">
+                        <option value="threshold">Threshold</option>
+                        <option value="stucki" selected>Stucki</option>
+                        <option value="floyd_steinberg">Floyd-Steinberg</option>
+                        <option value="atkinson">Atkinson</option>
+                        <option value="jarvis_judice_ninke">Jarvis Judice Ninke</option>
+                        <option value="stucki_extended">Stucki Extended</option>
+                        <option value="burkes">Burkes</option>
+                        <option value="sierra3">Sierra 3</option>
+                        <option value="sierra2">Sierra 2</option>
+                        <option value="sierra_2_4a">Sierra 2-4A</option>
+                        <option value="stevenson_arce">Stevenson Arce</option>
+
+                    </select>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="invert" checked>
+                        <label class="form-check-label" for="invert">Invert</label>
+                    </div>
+                    <div class="input-group-text">Color</div>
+                        <select class="form-select" id="color">
+                            <option value="">None</option>
+                            <option value="ansifg">ansifg</option>
+                            <option value="bg">htmlbg</option>
+                            <option value="fg">htmlfg</option>
+                            <option value="all">htmlall</option>
+                        </select>
+                    </div>
+    </div>
+    <div class = "ascii-preview box">
+        <button class = "btn btn-primary" id = "copyBtn">Copy to Clipboard</button>
+        <p id="asciiPreview" style="border: 1px solid black; padding: 10px; display: inline-block; white-space: pre;">
+        </p>
+    </div>
+        
+</body>
+</html>
