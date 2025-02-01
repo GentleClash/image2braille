@@ -23,3 +23,8 @@ Feel free to fork the repository and make your own changes.
 Play around with settings, generally threshold (no dithering) with slightly higher threshold values give better results.
 
 ### Warning : Do not choose ANSIFG color scheme, it was meant for terminal output, not for webpages.
+
+
+### To Do:
+- [ ] Option to download as image
+- [ ] Load ascii files to do operations on them (well only, inversion and increasing threshold is possible according to me)
