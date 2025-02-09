@@ -25,18 +25,30 @@ async def convert_to_ascii(
 ):
     try:
 
-        image_bytes = await file.read()
-        image_bytes_io = io.BytesIO(image_bytes)
+        if file.content_type.split("/")[0] == "text":
+            print(f"File content type: {file.content_type}")
+            _ = file.file.read().decode()
+            if invert:
+                print("Inverting dot art")
+                converter = BrailleAsciiConverter()
+                return converter.invertDotArt(_)
+            print("Returning file content")
+            return _
+        
+        else:
+            image_bytes = await file.read()
+            image_bytes_io = io.BytesIO(image_bytes)
 
-        converter = BrailleAsciiConverter()
-        ascii_art = converter.convert_to_braille(
-            image_path=image_bytes_io,
-            ascii_width=width,
-            threshold=threshold,
-            ditherer_name=ditherer.lower(),
-            invert=invert,
-            color=color
-        )
-        return ascii_art
+            converter = BrailleAsciiConverter()
+            ascii_art = converter.convert_to_braille(
+                image_path=image_bytes_io,
+                ascii_width=width,
+                threshold=threshold,
+                ditherer_name=ditherer.lower(),
+                invert=invert,
+                color=color
+            )
+            return ascii_art
+        
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

@@ -28,3 +28,4 @@ Play around with settings, generally threshold (no dithering) with slightly high
 ### To Do:
 - [ ] Option to download as image
 - [ ] Load ascii files to do operations on them (well only, inversion and increasing threshold is possible according to me)
+- [x] Inverting ascii to ascii

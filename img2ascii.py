@@ -1,4 +1,4 @@
-import io
+import argparse
 from PIL import Image
 import numpy as np
 
@@ -188,20 +188,40 @@ class BrailleAsciiConverter:
         else:
             return '\n'.join(ascii_art)
 
+    def invertDotArt(self, dotArt: str) -> str:
+        dotArtInversionMap = {"⠀":"⣿","⠁":"⣾","⠂":"⣽","⠃":"⣼","⠄":"⣻","⠅":"⣺","⠆":"⣹","⠇":"⣸","⠈":"⣷","⠉":"⣶","⠊":"⣵","⠋":"⣴","⠌":"⣳","⠍":"⣲","⠎":"⣱","⠏":"⣰","⠐":"⣯","⠑":"⣮","⠒":"⣭","⠓":"⣬","⠔":"⣫","⠕":"⣪","⠖":"⣩","⠗":"⣨","⠘":"⣧","⠙":"⣦","⠚":"⣥","⠛":"⣤","⠜":"⣣","⠝":"⣢","⠞":"⣡","⠟":"⣠","⠠":"⣟","⠡":"⣞","⠢":"⣝","⠣":"⣜","⠤":"⣛","⠥":"⣚","⠦":"⣙","⠧":"⣘","⠨":"⣗","⠩":"⣖","⠪":"⣕","⠫":"⣔","⠬":"⣓","⠭":"⣒","⠮":"⣑","⠯":"⣐","⠰":"⣏","⠱":"⣎","⠲":"⣍","⠳":"⣌","⠴":"⣋","⠵":"⣊","⠶":"⣉","⠷":"⣈","⠸":"⣇","⠹":"⣆","⠺":"⣅","⠻":"⣄","⠼":"⣃","⠽":"⣂","⠾":"⣁","⠿":"⣀","⡀":"⢿","⡁":"⢾","⡂":"⢽","⡃":"⢼","⡄":"⢻","⡅":"⢺","⡆":"⢹","⡇":"⢸","⡈":"⢷","⡉":"⢶","⡊":"⢵","⡋":"⢴","⡌":"⢳","⡍":"⢲","⡎":"⢱","⡏":"⢰","⡐":"⢯","⡑":"⢮","⡒":"⢭","⡓":"⢬","⡔":"⢫","⡕":"⢪","⡖":"⢩","⡗":"⢨","⡘":"⢧","⡙":"⢦","⡚":"⢥","⡛":"⢤","⡜":"⢣","⡝":"⢢","⡞":"⢡","⡟":"⢠","⡠":"⢟","⡡":"⢞","⡢":"⢝","⡣":"⢜","⡤":"⢛","⡥":"⢚","⡦":"⢙","⡧":"⢘","⡨":"⢗","⡩":"⢖","⡪":"⢕","⡫":"⢔","⡬":"⢓","⡭":"⢒","⡮":"⢑","⡯":"⢐","⡰":"⢏","⡱":"⢎","⡲":"⢍","⡳":"⢌","⡴":"⢋","⡵":"⢊","⡶":"⢉","⡷":"⢈","⡸":"⢇","⡹":"⢆","⡺":"⢅","⡻":"⢄","⡼":"⢃","⡽":"⢂","⡾":"⢁","⡿":"⢀","⢀":"⡿","⢁":"⡾","⢂":"⡽","⢃":"⡼","⢄":"⡻","⢅":"⡺","⢆":"⡹","⢇":"⡸","⢈":"⡷","⢉":"⡶","⢊":"⡵","⢋":"⡴","⢌":"⡳","⢍":"⡲","⢎":"⡱","⢏":"⡰","⢐":"⡯","⢑":"⡮","⢒":"⡭","⢓":"⡬","⢔":"⡫","⢕":"⡪","⢖":"⡩","⢗":"⡨","⢘":"⡧","⢙":"⡦","⢚":"⡥","⢛":"⡤","⢜":"⡣","⢝":"⡢","⢞":"⡡","⢟":"⡠","⢠":"⡟","⢡":"⡞","⢢":"⡝","⢣":"⡜","⢤":"⡛","⢥":"⡚","⢦":"⡙","⢧":"⡘","⢨":"⡗","⢩":"⡖","⢪":"⡕","⢫":"⡔","⢬":"⡓","⢭":"⡒","⢮":"⡑","⢯":"⡐","⢰":"⡏","⢱":"⡎","⢲":"⡍","⢳":"⡌","⢴":"⡋","⢵":"⡊","⢶":"⡉","⢷":"⡈","⢸":"⡇","⢹":"⡆","⢺":"⡅","⢻":"⡄","⢼":"⡃","⢽":"⡂","⢾":"⡁","⢿":"⡀","⣀":"⠿","⣁":"⠾","⣂":"⠽","⣃":"⠼","⣄":"⠻","⣅":"⠺","⣆":"⠹","⣇":"⠸","⣈":"⠷","⣉":"⠶","⣊":"⠵","⣋":"⠴","⣌":"⠳","⣍":"⠲","⣎":"⠱","⣏":"⠰","⣐":"⠯","⣑":"⠮","⣒":"⠭","⣓":"⠬","⣔":"⠫","⣕":"⠪","⣖":"⠩","⣗":"⠨","⣘":"⠧","⣙":"⠦","⣚":"⠥","⣛":"⠤","⣜":"⠣","⣝":"⠢","⣞":"⠡","⣟":"⠠","⣠":"⠟","⣡":"⠞","⣢":"⠝","⣣":"⠜","⣤":"⠛","⣥":"⠚","⣦":"⠙","⣧":"⠘","⣨":"⠗","⣩":"⠖","⣪":"⠕","⣫":"⠔","⣬":"⠓","⣭":"⠒","⣮":"⠑","⣯":"⠐","⣰":"⠏","⣱":"⠎","⣲":"⠍","⣳":"⠌","⣴":"⠋","⣵":"⠊","⣶":"⠉","⣷":"⠈","⣸":"⠇","⣹":"⠆","⣺":"⠅","⣻":"⠄","⣼":"⠃","⣽":"⠂","⣾":"⠁","⣿":"⠀"}
+        invertedDotArt = ""
+        for char in dotArt:
+            invertedDotArt += dotArtInversionMap.get(char, char)
+        return invertedDotArt
+
 def main():
     converter = BrailleAsciiConverter()
+    parser = argparse.ArgumentParser(description='Convert an image to ASCII art.')
+    parser.add_argument('image_path', help='Path to the image file')
+    parser.add_argument('--width', type=int, default=100, help='Width of the ASCII art')
+    parser.add_argument('--ditherer', default='floyd_steinberg', choices=converter.ditherers.keys(), help='Dithering algorithm')
+    parser.add_argument('--threshold', type=int, default=127, help='Threshold for dithering [0-256]')
+    parser.add_argument('--invert', action='store_true', help='Invert the image')
+    parser.add_argument('--color', choices=['ansi', 'fg', 'bg', 'all'], default=None, help='Color the ASCII art') 
+    parser.add_argument('--output', help='Output file path')
+    args = parser.parse_args()
+
     ascii_art = converter.convert_to_braille(
-        image_path='sample.png',
-        ascii_width=100,
-        ditherer_name='stucki',
-        threshold=200,
-        invert=True,
-        color=True  
+        image_path=args.image_path,
+        ascii_width=args.width,
+        ditherer_name=args.ditherer,
+        threshold=args.threshold,
+        invert=args.invert,
+        color=args.color
     )
+
     print(ascii_art)
-    
-    with open('output.txt', 'w', encoding='utf-8') as f:
-        f.write(ascii_art)
+
+    if args.output:
+        with open(args.output, 'w') as f:
+            f.write(ascii_art)
+        print(f'ASCII art saved to {args.output}')
 
 if __name__ == '__main__':
     main()
