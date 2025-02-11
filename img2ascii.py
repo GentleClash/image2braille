@@ -1,7 +1,7 @@
-import argparse
-from PIL import Image
+import argparse, cv2
 import numpy as np
 from functools import lru_cache
+from numba import njit, prange
 
 class KernelDitherer:
     def __init__(self, origin, numerators, denominator=1):
@@ -14,6 +14,8 @@ class KernelDitherer:
         origin_x, origin_y = self.origin
         for y in range(len(self.numerators)):
             for x in range(len(self.numerators[y])):
+                if self.numerators[y][x] == 0:
+                    continue
                 weights.append([
                     x - origin_x,
                     y - origin_y,
@@ -25,27 +27,30 @@ class KernelDitherer:
         height, width = image_array.shape
         output = np.zeros((height, width), dtype=np.uint8)
         
-        working_array = image_array.copy().astype(float)
-        weights = self.weights()
-        
-        for y in range(height):
-            for x in range(width):
-                old_pixel = working_array[y, x]
-                new_pixel = 255 if old_pixel > threshold else 0
-                output[y, x] = new_pixel
-                
-                error = old_pixel - new_pixel
-                
-                for weight_x, weight_y, weight in weights:
-                    new_x = x + weight_x
-                    new_y = y + weight_y
-                    
-                    if (0 <= new_x < width and 
-                        0 <= new_y < height and 
-                        weight != 0):
-                        working_array[new_y, new_x] += error * weight
-                        
+        working_array = image_array.copy().astype(np.float32)
+        weights = np.array(self.weights(), dtype=np.float32)
+        output = _apply_dither(working_array, output, weights, threshold, height, width)
         return output
+    
+@njit(parallel=True)
+def _apply_dither(working_array, output, weights, threshold, height, width):        
+    for y in prange(height):
+        for x in range(width):
+            old_pixel = working_array[y, x]
+            new_pixel = 255 if old_pixel > threshold else 0
+            output[y, x] = new_pixel
+            
+            error = old_pixel - new_pixel
+            
+            for weight_x, weight_y, weight in weights:
+                new_x = x + int(weight_x)
+                new_y = y + int(weight_y)
+                
+                if (0 <= new_x < width and 
+                    0 <= new_y < height):
+                    working_array[new_y, new_x] += error * weight
+                    
+    return output
 
 class BrailleAsciiConverter:
     def __init__(self):
@@ -108,22 +113,32 @@ class BrailleAsciiConverter:
             ], 200)
         }
 
-    @lru_cache(maxsize=20)
+    @lru_cache(maxsize=40)
     def convert_to_braille(self, image_path, ascii_width=100, ditherer_name='floyd_steinberg', 
                           threshold=127, invert=False, color=False): 
         
-        color_image = Image.open(image_path)
-        image = color_image.convert('L')
+        #color_image = Image.open(image_path)
+        #image = color_image.convert('L')
+        if isinstance(image_path, str):
+            image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+            color_image = cv2.imread(image_path, cv2.IMREAD_COLOR)
+        
+        else:
+            try:
+                image_array = np.frombuffer(image_path.read(), np.uint8) #From buffer
+                image = cv2.imdecode(image_array, cv2.IMREAD_GRAYSCALE)
+                color_image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
+            except Exception as e:
+                raise ValueError('Invalid image file')
 
-        # Calculating height maintaining aspect ratio
-        aspect_ratio = image.height / image.width
+        aspect_ratio = image.shape[0] / image.shape[1]
         ascii_height = int(ascii_width * self.ASCII_X_DOTS * aspect_ratio / self.ASCII_Y_DOTS)
         
         # Resizing both images
         width = ascii_width * self.ASCII_X_DOTS
         height = ascii_height * self.ASCII_Y_DOTS
-        image = image.resize((width, height), Image.Resampling.LANCZOS)
-        color_image = color_image.resize((width, height), Image.Resampling.LANCZOS)
+        image = cv2.resize(image, (width, height), interpolation=cv2.INTER_LANCZOS4)
+        color_image = cv2.resize(color_image, (width, height), interpolation=cv2.INTER_LANCZOS4)
         
         image_array = np.array(image)
     
@@ -138,7 +153,7 @@ class BrailleAsciiConverter:
             line = []
             for x in range(0, width, self.ASCII_X_DOTS):
                 if color:
-                    r, g, b = color_image.getpixel((x, y))[:3]
+                    b, g, r = color_image[y, x] 
                     
                     if color=='fg':
                         color_code=f'<font color="#{r:02x}{g:02x}{b:02x}">'

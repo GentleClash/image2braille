@@ -38,6 +38,7 @@ async def convert_to_ascii(
         else:
             image_bytes = await file.read()
             image_bytes_hash = hash(image_bytes)
+            width = min(300, width)
             key = (image_bytes_hash, width, threshold, ditherer, invert, color)
             if key in cache:
                 return cache[key]
@@ -47,7 +48,7 @@ async def convert_to_ascii(
             converter = BrailleAsciiConverter()
             ascii_art = converter.convert_to_braille(
                 image_path=image_bytes_io,
-                ascii_width=min(300, width),
+                ascii_width=width,
                 threshold=threshold,
                 ditherer_name=ditherer.lower(),
                 invert=invert,
