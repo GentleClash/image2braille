@@ -7,6 +7,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const dithererSelect = document.getElementById('dithererName');
     const invertCheckbox = document.getElementById('invert');
     const colorSelect = document.getElementById('color');
+    const downloadBtn = document.getElementById('downloadBtn');
+
 
     const convertImage = async () => {
         if (!fileInput.files.length) return;
@@ -63,4 +65,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('Failed to copy ASCII text');
             });
     });
+
+
+    downloadBtn.addEventListener('click', () => {
+        htmlToDownload = asciiPreview.innerHTML;
+        if (htmlToDownload === '') {
+            alert('Nothing to download');
+            return;
+        }
+        const blob = new Blob([asciiPreview.innerHTML], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'ascii.txt';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+    );
+    
 });

@@ -1,6 +1,7 @@
 import argparse
 from PIL import Image
 import numpy as np
+from functools import lru_cache
 
 class KernelDitherer:
     def __init__(self, origin, numerators, denominator=1):
@@ -107,12 +108,13 @@ class BrailleAsciiConverter:
             ], 200)
         }
 
+    @lru_cache(maxsize=20)
     def convert_to_braille(self, image_path, ascii_width=100, ditherer_name='floyd_steinberg', 
-                          threshold=127, invert=False, color=False):
-        color_image = Image.open(image_path)
-            
-        image = color_image.convert('L')
+                          threshold=127, invert=False, color=False): 
         
+        color_image = Image.open(image_path)
+        image = color_image.convert('L')
+
         # Calculating height maintaining aspect ratio
         aspect_ratio = image.height / image.width
         ascii_height = int(ascii_width * self.ASCII_X_DOTS * aspect_ratio / self.ASCII_Y_DOTS)
@@ -124,7 +126,7 @@ class BrailleAsciiConverter:
         color_image = color_image.resize((width, height), Image.Resampling.LANCZOS)
         
         image_array = np.array(image)
-        
+    
         # Applying dithering
         ditherer = self.ditherers[ditherer_name]
         dithered = ditherer.dither(image_array, threshold)
@@ -182,7 +184,7 @@ class BrailleAsciiConverter:
                     line.append("\x1b[0m")  
 
             ascii_art.append(''.join(line))
-        
+       
         if color in ['fg', 'bg', 'all']:
             return '<br>'.join(ascii_art)
         else:

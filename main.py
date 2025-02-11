@@ -4,6 +4,9 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from img2ascii import BrailleAsciiConverter
 import io
+from cachetools import LRUCache
+
+cache = LRUCache(maxsize=40)
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -34,6 +37,11 @@ async def convert_to_ascii(
         
         else:
             image_bytes = await file.read()
+            image_bytes_hash = hash(image_bytes)
+            key = (image_bytes_hash, width, threshold, ditherer, invert, color)
+            if key in cache:
+                return cache[key]
+
             image_bytes_io = io.BytesIO(image_bytes)
 
             converter = BrailleAsciiConverter()
@@ -45,6 +53,8 @@ async def convert_to_ascii(
                 invert=invert,
                 color=color
             )
+
+            cache[key] = ascii_art
             return ascii_art
         
     except Exception as e:
