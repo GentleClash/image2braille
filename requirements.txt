@@ -9,7 +9,7 @@ idna==3.10
 Jinja2==3.1.5
 MarkupSafe==3.0.2
 numpy==2.2.2
-numba==0.6.1
+numba==0.61.0
 opencv-contrib-python-headless==4.11.0.86
 packaging==24.2
 pillow==11.1.0
