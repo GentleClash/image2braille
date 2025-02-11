@@ -1,4 +1,4 @@
-FROM python:3.12.9
+FROM python:3.13.1
 ENV PYTHONUNBUFFERED True
 
 RUN pip install --upgrade pip
