@@ -26,13 +26,10 @@ async def convert_to_ascii(
     try:
 
         if file.content_type.split("/")[0] == "text":
-            print(f"File content type: {file.content_type}")
             _ = file.file.read().decode()
             if invert:
-                print("Inverting dot art")
                 converter = BrailleAsciiConverter()
                 return converter.invertDotArt(_)
-            print("Returning file content")
             return _
         
         else:
@@ -42,7 +39,7 @@ async def convert_to_ascii(
             converter = BrailleAsciiConverter()
             ascii_art = converter.convert_to_braille(
                 image_path=image_bytes_io,
-                ascii_width=width,
+                ascii_width=min(300, width),
                 threshold=threshold,
                 ditherer_name=ditherer.lower(),
                 invert=invert,

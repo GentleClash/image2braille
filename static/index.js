@@ -52,29 +52,9 @@ document.addEventListener('DOMContentLoaded', () => {
     invertCheckbox.addEventListener('change', convertImage);
     colorSelect.addEventListener('change', convertImage);
 
-    function processPixelText(elementId) {
-        const element = document.getElementById(elementId);
-        const modifiedInnerHTML = element.innerHTML.replace(/<br>/g, '<font>\n</font>');
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = modifiedInnerHTML;
-        
-        return tempDiv.textContent;
-      }
-      
-      function extractTextWithNewlines(element) {
-        const temp = document.createElement('div');
-        temp.innerHTML = element.innerHTML;
-        
-        temp.querySelectorAll('br').forEach(br => {
-          br.replaceWith('\n');
-        });
-        
-        return temp.textContent;
-      }
-
-
     copyBtn.addEventListener('click', () => {
-        navigator.clipboard.writeText(extractTextWithNewlines(asciiPreview))
+        htmlToCopy = asciiPreview.innerHTML;
+        navigator.clipboard.writeText(htmlToCopy)
             .then(() => {
                 alert('ASCII text copied to clipboard');
             })
