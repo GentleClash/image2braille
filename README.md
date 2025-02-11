@@ -16,7 +16,7 @@ Ditherers by https://github.com/hbldh/hitherdither/tree/master
 git clone https://github.com/GentleClash/image2braille
 cd image2braille
 pip install -r requirements.txt
-uvicorn main:app --reload
+uvicorn main:app
 ``` 
 
 Feel free to fork the repository and make your own changes.
