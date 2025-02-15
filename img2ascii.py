@@ -26,9 +26,9 @@ class KernelDitherer:
     def dither(self, image_array, threshold):
         height, width = image_array.shape
         output = np.zeros((height, width), dtype=np.uint8)
-        
+        weights_list = self.weights()
         working_array = image_array.copy().astype(np.float32)
-        weights = np.array(self.weights(), dtype=np.float32)
+        weights = np.array(weights_list, dtype=np.float32) if weights_list else np.zeros((0, 3), dtype=np.float32)
         output = _apply_dither(working_array, output, weights, threshold, height, width)
         return output
     
