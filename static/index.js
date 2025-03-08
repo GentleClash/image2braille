@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+    let isConverting = false;
     const fileInput = document.getElementById('fileInput');
     const asciiPreview = document.getElementById('asciiPreview');
     const copyBtn = document.getElementById('copyBtn');
@@ -12,7 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const convertImage = async () => {
         if (!fileInput.files.length) return;
-
+        if (isConverting) return;
+        isConverting = true;
         const formData = new FormData();
         formData.append('file', fileInput.files[0]);
         formData.append('width', asciiWidthInput.value);
@@ -29,6 +31,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
         try {
+
+
             const response = await fetch('/convert-to-ascii', {
                 method: 'POST',
                 body: formData
@@ -44,6 +48,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Error:', error);
             alert('Failed to convert image to ASCII');
+        } finally {
+            isConverting = false;
         }
     };
 
