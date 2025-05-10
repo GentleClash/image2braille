@@ -8,6 +8,7 @@ from cachetools import LRUCache
 #Temporary endpoint added
 from fastapi.responses import StreamingResponse
 from PIL import Image
+from PIL import ImageFilter
 
 cache = LRUCache(maxsize=40)
 
@@ -84,6 +85,8 @@ async def resize_image(
             raise HTTPException(status_code=400, detail="Unsupported format.")
 
         image = Image.open(io.BytesIO(await file.read()))
+        image = image.filter(ImageFilter.UnsharpMask(radius=1, percent=150, threshold=3))
+        
         output = io.BytesIO()
 
         quality = 95 if format in ["JPEG", "WEBP"] else None
