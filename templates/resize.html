@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Resize Image</title>
+</head>
+<body>
+    <h2>Resize Image to Target File Size</h2>
+    <form action="/resize-image" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" required><br><br>
+
+        <label for="max_size_kb">Target Max Size (KB):</label>
+        <select name="max_size_kb">
+            <option disabled selected>Choose Max Size</option>
+            <option value="10">Under 10 KB</option>
+            <option value="20">Under 20 KB</option>
+            <option value="50">Under 50 KB</option>
+            <option value="100">Under 100 KB</option>
+        </select><br><br>
+
+        <label for="format">Save As Format:</label>
+        <select name="format">
+            <option value="JPEG">JPEG</option>
+            <option value="PNG">PNG</option>
+            <option value="WEBP">WEBP</option>
+        </select><br><br>
+
+        <button type="submit">Resize</button>
+    </form>
+</body>
+</html>
