@@ -95,7 +95,7 @@ async def resize_image(
         # First attempt: just try the original size with specified quality
         quality = 95 if format in ["JPEG", "WEBP"] else None
         scale_factor = 1.0
-        max_attempts = 10
+        max_attempts = 16
         attempts = 0
         
         while attempts < max_attempts:
