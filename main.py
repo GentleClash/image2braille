@@ -100,7 +100,14 @@ async def resize_image(
             quality -= 5
 
         output.seek(0)
-        return StreamingResponse(output, media_type=f"image/{format.lower()}")
+        #return StreamingResponse(output, media_type=f"image/{format.lower()}")
+        import base64
+
+        encoded = base64.b64encode(output.getvalue()).decode('utf-8')
+        mime = f"image/{format.lower()}"
+        data_url = f"data:{mime};base64,{encoded}"
+
+        return templates.TemplateResponse("download.html", {"request": request, "image_data": data_url})
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Resize failed: {str(e)}")
