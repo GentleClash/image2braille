@@ -90,7 +90,7 @@ async def resize_image(
         original_width, original_height = image.size
         
         # Apply a light sharpening filter to maintain perceived quality
-        image = image.filter(ImageFilter.UnsharpMask(radius=1, percent=150, threshold=3))
+        image = image.filter(ImageFilter.UnsharpMask(radius=1, percent=75, threshold=3))
         
         # First attempt: just try the original size with specified quality
         quality = 95 if format in ["JPEG", "WEBP"] else None
