@@ -84,33 +84,82 @@ async def resize_image(
         if format not in ["JPEG", "PNG", "WEBP"]:
             raise HTTPException(status_code=400, detail="Unsupported format.")
 
-        image = Image.open(io.BytesIO(await file.read()))
+        # Read the image
+        content = await file.read()
+        image = Image.open(io.BytesIO(content))
+        original_width, original_height = image.size
+        
+        # Apply a light sharpening filter to maintain perceived quality
         image = image.filter(ImageFilter.UnsharpMask(radius=1, percent=150, threshold=3))
         
-        output = io.BytesIO()
-
+        # First attempt: just try the original size with specified quality
         quality = 95 if format in ["JPEG", "WEBP"] else None
-        while quality is None or quality > 10:
-            output.seek(0)
+        scale_factor = 1.0
+        max_attempts = 10
+        attempts = 0
+        
+        while attempts < max_attempts:
+            attempts += 1
+            output = io.BytesIO()
+            
+            # Resize the image if scale factor is less than 1
+            if scale_factor < 1.0:
+                new_width = int(original_width * scale_factor)
+                new_height = int(original_height * scale_factor)
+                resized_image = image.resize((new_width, new_height), Image.LANCZOS)
+            else:
+                resized_image = image
+            
+            # Save with current quality
             save_kwargs = {"format": format}
-            if format in ["JPEG", "WEBP"]:
+            if format in ["JPEG", "WEBP"] and quality is not None:
                 save_kwargs["quality"] = quality
-
-            image.save(output, **save_kwargs)
+            
+            resized_image.save(output, **save_kwargs)
+            
+            # Check if size requirement is met
             size_kb = output.tell() / 1024
-            if size_kb <= max_size_kb or format not in ["JPEG", "WEBP"]:
+            if size_kb <= max_size_kb:
                 break
-            quality -= 5
-
+                
+            # Try reducing quality first if it's above threshold
+            if format in ["JPEG", "WEBP"] and quality is not None and quality > 50:
+                quality -= 10
+            # Then try reducing dimensions
+            else:
+                scale_factor *= 0.8  # Reduce by 20% each time
+                if quality is not None and quality > 50:
+                    quality = max(50, quality - 5)  # Continue reducing quality but more gently
+        
+        # If we couldn't meet the target size, use the smallest version we got
         output.seek(0)
-        #return StreamingResponse(output, media_type=f"image/{format.lower()}")
+        
+        # Return the image as base64 for the template
         import base64
-
         encoded = base64.b64encode(output.getvalue()).decode('utf-8')
         mime = f"image/{format.lower()}"
         data_url = f"data:{mime};base64,{encoded}"
+        
+        # Include metadata about the compression in the response
+        final_size_kb = output.tell() / 1024
+        compression_info = {
+            "original_size": len(content) / 1024,
+            "final_size": final_size_kb,
+            "target_size": max_size_kb,
+            "quality": quality,
+            "scale_factor": scale_factor,
+            "original_dimensions": f"{original_width}x{original_height}",
+            "final_dimensions": f"{int(original_width * scale_factor)}x{int(original_height * scale_factor)}" if scale_factor < 1.0 else f"{original_width}x{original_height}"
+        }
 
-        return templates.TemplateResponse("download.html", {"request": request, "image_data": data_url})
+        return templates.TemplateResponse(
+            "download.html", 
+            {
+                "request": request, 
+                "image_data": data_url,
+                "compression_info": compression_info
+            }
+        )
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Resize failed: {str(e)}")
