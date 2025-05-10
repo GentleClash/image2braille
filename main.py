@@ -5,6 +5,9 @@ from fastapi.staticfiles import StaticFiles
 from img2ascii import BrailleAsciiConverter
 import io
 from cachetools import LRUCache
+#Temporary endpoint added
+from fastapi.responses import StreamingResponse
+from PIL import Image
 
 cache = LRUCache(maxsize=40)
 
@@ -60,3 +63,44 @@ async def convert_to_ascii(
         
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/resize", response_class=HTMLResponse)
+def show_resize_page(request: Request):
+    return templates.TemplateResponse("resize.html", {"request": request})
+
+@app.post("/resize-image", response_class=HTMLResponse)
+async def resize_image(
+    request: Request, 
+    file: UploadFile, 
+    max_size_kb: int = Form(...), 
+    format: str = Form("JPEG")
+):
+    try:
+        if not file.content_type.startswith("image/"):
+            raise HTTPException(status_code=400, detail="Not an image file.")
+
+        format = format.upper()
+        if format not in ["JPEG", "PNG", "WEBP"]:
+            raise HTTPException(status_code=400, detail="Unsupported format.")
+
+        image = Image.open(io.BytesIO(await file.read()))
+        output = io.BytesIO()
+
+        quality = 95 if format in ["JPEG", "WEBP"] else None
+        while quality is None or quality > 10:
+            output.seek(0)
+            save_kwargs = {"format": format}
+            if format in ["JPEG", "WEBP"]:
+                save_kwargs["quality"] = quality
+
+            image.save(output, **save_kwargs)
+            size_kb = output.tell() / 1024
+            if size_kb <= max_size_kb or format not in ["JPEG", "WEBP"]:
+                break
+            quality -= 5
+
+        output.seek(0)
+        return StreamingResponse(output, media_type=f"image/{format.lower()}")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Resize failed: {str(e)}")
