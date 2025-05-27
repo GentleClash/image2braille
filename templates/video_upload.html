@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Video to ASCII Art Converter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .progress {
+            height: 20px;
+            background-color: #f3f3f3;
+            border-radius: 4px;
+            margin-top: 20px;
+            display: none;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: #4CAF50;
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        #previewSection {
+            margin-top: 30px;
+            display: none;
+        }
+        .preview-frame {
+            background-color: #f9f9f9;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: pre;
+            font-family: monospace;
+        }
+        .preview-controls {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .frame-navigation {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        #previewContainer {
+            max-height: 500px;
+            overflow: auto;
+            text-align: center; 
+        }
+
+        .preview-frame img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>Video to ASCII Art Converter</h1>
+    
+    <form id="videoForm" action="/convert-video-to-ascii" method="post" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="file">Upload Video:</label>
+            <input type="file" id="file" name="file" accept="video/*" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="width">ASCII Width:</label>
+            <input type="number" id="width" name="width" value="100" min="10" max="300">
+            <small>Width of ASCII art in characters (10-300)</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="threshold">Threshold:</label>
+            <input type="range" id="threshold" name="threshold" min="0" max="255" value="128">
+            <span id="thresholdValue">128</span>
+        </div>
+        
+        <div class="form-group">
+            <label for="ditherer">Dithering Algorithm:</label>
+            <select id="ditherer" name="ditherer">
+                <option value="threshold">Threshold</option>
+                <option value="floyd_steinberg">Floyd-Steinberg</option>
+                <option value="stucki" selected>Stucki</option>
+                <option value="atkinson">Atkinson</option>
+                <option value="jarvis_judice_ninke">Jarvis-Judice-Ninke</option>
+                <option value="sierra3">Sierra-3</option>
+                <option value="sierra2">Sierra-2</option>
+                <option value="sierra_2_4a">Sierra-2-4A</option>
+                <option value="burkes">Burkes</option>
+                <option value="stevenson_arce">Stevenson-Arce</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="frame_skip">Frame Skip:</label>
+            <input type="number" id="frame_skip" name="frame_skip" value="1" min="1" max="10">
+            <small>Process every Nth frame (higher values = faster processing, fewer frames)</small>
+        </div>
+        
+        <div class="form-group">
+            <label>Options:</label>
+            <div style="display: flex; align-items: center;">
+            <input type="checkbox" id="invert" name="invert" style="width: auto; margin-right: 8px;">
+            <label for="invert" style="display: inline; font-weight: normal; margin-bottom: 0;">Invert Colors</label>
+            </div>
+        </div>
+        
+        <button type="button" id="previewBtn">Preview Settings</button>
+        <button type="submit" id="submitBtn">Convert to ASCII Video</button>
+    </form>
+    
+    <div class="progress" id="progressContainer">
+        <div class="progress-bar" id="progressBar"></div>
+        <div id="progressText" style="text-align: center; margin-top: 5px;">Processing: 0%</div>
+        <div id="statusText" style="text-align: center; margin-top: 5px; font-style: italic;"></div>
+    </div>
+    
+    <div id="previewSection">
+        <div class="preview-header">
+            <h2>Preview Frames</h2>
+            <p>Showing sample frames with current settings</p>
+        </div>
+        
+        <div id="previewContainer">
+            <!-- Preview frames will be inserted here -->
+        </div>
+        
+        <div class="preview-controls">
+            <div class="frame-navigation">
+                <button id="prevFrameBtn" disabled>Previous Frame</button>
+                <span id="frameCounter">Frame 1 of 5</span>
+                <button id="nextFrameBtn">Next Frame</button>
+            </div>
+            <div class="action-buttons">
+                <button id="adjustSettingsBtn">Adjust Settings</button>
+                <button id="proceedBtn">Proceed with Conversion</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Update threshold value display
+        document.getElementById('threshold').addEventListener('input', function() {
+            document.getElementById('thresholdValue').textContent = this.value;
+        });
+        
+        // Preview functionality
+        document.getElementById('previewBtn').addEventListener('click', async function() {
+            const fileInput = document.getElementById('file');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('Please select a video file first');
+                return;
+            }
+            
+            // Show progress indicator
+            document.getElementById('progressContainer').style.display = 'block';
+            document.getElementById('progressBar').style.width = '0%';
+            document.getElementById('progressText').textContent = 'Processing preview frames...';
+            document.getElementById('statusText').textContent = '';
+            document.getElementById('previewBtn').disabled = true;
+            
+            try {
+                // Get current settings from form
+                const formData = new FormData();
+                formData.append('file', fileInput.files[0]);
+                formData.append('num_frames', 20); // Request 20 preview frames
+                formData.append('width', document.getElementById('width').value);
+                formData.append('threshold', document.getElementById('threshold').value);
+                formData.append('ditherer', document.getElementById('ditherer').value);
+                formData.append('invert', document.getElementById('invert').checked);
+                
+                // Use the server-side endpoint to get preview frames
+                const response = await fetch('/preview-video-frames', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status}: ${await response.text()}`);
+                }
+                
+                // Get the frames and metadata
+                const result = await response.json();
+                
+                // Update progress
+                document.getElementById('progressBar').style.width = '100%';
+                document.getElementById('progressText').textContent = 'Preview ready';
+                
+                // Display the frames
+                displayAsciiFrames(result.frames);
+                
+                // Show preview section and hide progress
+                document.getElementById('progressContainer').style.display = 'none';
+                document.getElementById('previewSection').style.display = 'block';
+                document.getElementById('previewBtn').disabled = false;
+                
+            } catch (error) {
+                alert('Error generating preview: ' + error.message);
+                document.getElementById('progressContainer').style.display = 'none';
+                document.getElementById('previewBtn').disabled = false;
+            }
+        });
+        
+        // Display ASCII frames
+        let currentFrameIndex = 0;
+        let previewFrames = [];
+        
+        function displayAsciiFrames(frames) {
+            previewFrames = frames;
+            currentFrameIndex = 0;
+            
+            // Display the first frame
+            showCurrentFrame();
+            
+            // Update frame counter
+            updateFrameCounter();
+            
+            // Set up navigation buttons
+            const prevBtn = document.getElementById('prevFrameBtn');
+            const nextBtn = document.getElementById('nextFrameBtn');
+            
+            prevBtn.onclick = showPreviousFrame;
+            nextBtn.onclick = showNextFrame;
+            
+            // Set up action buttons
+            document.getElementById('adjustSettingsBtn').onclick = function() {
+                document.getElementById('previewSection').style.display = 'none';
+            };
+            
+            document.getElementById('proceedBtn').onclick = function() {
+                document.getElementById('submitBtn').click();
+            };
+        }
+        
+        function showCurrentFrame() {
+            const container = document.getElementById('previewContainer');
+            container.innerHTML = '';
+            
+            const frameDiv = document.createElement('div');
+            frameDiv.className = 'preview-frame';
+            
+            // Create image element instead of pre element
+            const img = document.createElement('img');
+            img.src = `data:image/png;base64,${previewFrames[currentFrameIndex].image_base64}`;
+            img.alt = `Frame at ${previewFrames[currentFrameIndex].time.toFixed(2)}s`;
+            img.style.maxWidth = '100%';
+            img.style.height = 'auto';
+            
+            // Add timestamp info
+            const timeDiv = document.createElement('div');
+            timeDiv.style.marginTop = '10px';
+            timeDiv.style.fontSize = '14px';
+            timeDiv.style.color = '#666';
+            timeDiv.textContent = `Frame ${currentFrameIndex + 1}/${previewFrames.length} - Time: ${previewFrames[currentFrameIndex].time.toFixed(2)}s`;
+            
+            frameDiv.appendChild(img);
+            frameDiv.appendChild(timeDiv);
+            container.appendChild(frameDiv);
+            
+            // Enable/disable navigation buttons as needed
+            document.getElementById('prevFrameBtn').disabled = (currentFrameIndex === 0);
+            document.getElementById('nextFrameBtn').disabled = (currentFrameIndex === previewFrames.length - 1);
+        }
+        
+        function showPreviousFrame() {
+            if (currentFrameIndex > 0) {
+                currentFrameIndex--;
+                showCurrentFrame();
+                updateFrameCounter();
+            }
+        }
+        
+        function showNextFrame() {
+            if (currentFrameIndex < previewFrames.length - 1) {
+                currentFrameIndex++;
+                showCurrentFrame();
+                updateFrameCounter();
+            }
+        }
+        
+        function updateFrameCounter() {
+            document.getElementById('frameCounter').textContent = `Frame ${currentFrameIndex + 1} of ${previewFrames.length}`;
+        }
+        
+        // Variables for progress polling
+        let progressPollingInterval = null;
+        let currentTaskId = null;
+        
+        // Handle form submission
+        document.getElementById('videoForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const form = this;
+            const formData = new FormData(form);
+            
+            // Show progress bar
+            document.getElementById('progressContainer').style.display = 'block';
+            document.getElementById('previewSection').style.display = 'none';
+            document.getElementById('progressBar').style.width = '0%';
+            document.getElementById('progressText').textContent = 'Starting conversion...';
+            document.getElementById('statusText').textContent = 'Uploading video...';
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('submitBtn').textContent = 'Processing...';
+            document.getElementById('previewBtn').disabled = true;
+            
+            // Clear any existing polling
+            if (progressPollingInterval) {
+                clearInterval(progressPollingInterval);
+            }
+            
+            // Submit form
+            fetch(form.action, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        throw new Error(text);
+                    });
+                }
+                
+                return response.json();
+            })
+            .then(data => {
+                // Start polling for progress with the task ID
+                if (data.task_id) {
+                    currentTaskId = data.task_id;
+                    
+                    // Update status
+                    document.getElementById('progressText').textContent = 'Processing video...';
+                    document.getElementById('statusText').textContent = 'This may take several minutes for larger videos';
+                    
+                    // Start polling for progress
+                    progressPollingInterval = setInterval(checkProgress, 1000);
+                } else {
+                    throw new Error('No task ID returned from server');
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error.message);
+                resetFormState();
+            });
+        });
+        
+        // Function to check progress
+        function checkProgress() {
+            if (!currentTaskId) return;
+            
+            fetch(`/conversion-progress/${currentTaskId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Server returned ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(progressData => {
+                    // Update progress bar and status
+                    const percentComplete = Math.round(progressData.progress * 100);
+                    document.getElementById('progressBar').style.width = `${percentComplete}%`;
+                    document.getElementById('progressText').textContent = `Processing: ${percentComplete}%`;
+                    
+                    // Update status message based on current stage
+                    const statusMessages = {
+                        'initializing': 'Preparing video...',
+                        'file_received': 'Video uploaded, starting conversion...',
+                        'extracting_frames': 'Extracting frames from video...',
+                        'processing_frames': 'Converting frames to ASCII art...',
+                        'completed': 'Conversion complete! Preparing download...'
+                    };
+                    
+                    if (statusMessages[progressData.status]) {
+                        document.getElementById('statusText').textContent = statusMessages[progressData.status];
+                    } else if (progressData.status.startsWith('error:')) {
+                        // Handle error
+                        clearInterval(progressPollingInterval);
+                        alert('Error: ' + progressData.status.substring(6));
+                        resetFormState();
+                    }
+                    
+                    // If completed, download the file
+                    if (progressData.status === 'completed') {
+                        clearInterval(progressPollingInterval);
+                        
+                        // Download the file
+                        fetch(`/download-ascii-video/${currentTaskId}`)
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error(`Server returned ${response.status}`);
+                                }
+                                
+                                // Get filename from headers
+                                const contentDisposition = response.headers.get('content-disposition');
+                                let filename = 'ascii_video.mp4';
+                                if (contentDisposition) {
+                                    const matches = /filename="([^"]+)"/.exec(contentDisposition);
+                                    if (matches && matches[1]) {
+                                        filename = matches[1];
+                                    }
+                                }
+                                
+                                return response.blob().then(blob => {
+                                    // Create download link
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = filename;
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    document.body.removeChild(a);
+                                    URL.revokeObjectURL(url);
+                                    
+                                    // Reset form state
+                                    resetFormState();
+                                });
+                            })
+                            .catch(error => {
+                                alert('Error downloading file: ' + error.message);
+                                resetFormState();
+                            });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking progress:', error);
+                    // Don't stop polling on temporary errors
+                });
+        }
+        
+        // Function to reset form state
+        function resetFormState() {
+            document.getElementById('progressContainer').style.display = 'none';
+            document.getElementById('submitBtn').disabled = false;
+            document.getElementById('submitBtn').textContent = 'Convert to ASCII Video';
+            document.getElementById('previewBtn').disabled = false;
+            
+            if (progressPollingInterval) {
+                clearInterval(progressPollingInterval);
+                progressPollingInterval = null;
+            }
+            
+            currentTaskId = null;
+        }
+    </script>
+</body>
+</html>

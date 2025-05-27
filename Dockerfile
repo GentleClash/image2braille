@@ -1,5 +1,9 @@
-FROM python:3.13.1
+FROM python:3.13.1-slim
 ENV PYTHONUNBUFFERED True
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --upgrade pip
 COPY requirements.txt .

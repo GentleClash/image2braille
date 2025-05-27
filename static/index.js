@@ -13,8 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const convertImage = async () => {
         if (!fileInput.files.length) return;
-        if (isConverting) return;
-        isConverting = true;
+        //if (isConverting) return;                 --lock part 1
+        //isConverting = true;                      --lock part 2
         const formData = new FormData();
         formData.append('file', fileInput.files[0]);
         formData.append('width', asciiWidthInput.value);
@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Error:', error);
             alert('Failed to convert image to ASCII');
         } finally {
-            isConverting = false;
+            //isConverting = false;         --lock part 3
         }
     };
 
