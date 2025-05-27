@@ -8,8 +8,6 @@ from img2ascii import BrailleAsciiConverter
 import io
 import uuid, time
 from cachetools import LRUCache
-#Temporary endpoint added
-from fastapi.responses import StreamingResponse
 from PIL import Image
 from PIL import ImageFilter
 import tempfile, os, shutil, time
@@ -21,6 +19,7 @@ app: FastAPI = FastAPI()
 templates: Jinja2Templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 conversion_progress = {}
+temporary_directories = {}
 
 
 def update_progress(task_id, progress, status="processing") -> None:
@@ -150,7 +149,7 @@ async def resize_image(
             else:
                 scale_factor *= 0.8  # Reduce by 20% each time
                 if quality is not None and quality > 50:
-                    quality = max(50, quality - 5)  # Continue reducing quality but more gently
+                    quality = max(50, quality - 5)  # Continue reducing quality
         
         # If we couldn't meet the target size, use the smallest version we got
         output.seek(0)
@@ -275,6 +274,7 @@ async def convert_video_to_ascii(
                 update_progress(task_id, 1.0, "completed")
                 conversion_progress[task_id]["file_path"] = result_path  
                 conversion_progress[task_id]["filename"] = output_filename
+                temporary_directories[temp_dir] = time.time()
                 
                 # Keep task info for a while before cleanup
                 def cleanup_task() -> None:
@@ -282,7 +282,19 @@ async def convert_video_to_ascii(
                     if task_id in conversion_progress:
                         del conversion_progress[task_id]
                 
+                def remove_temp_dir() -> None:
+                    try:
+                        current_time = time.time()
+                        if temp_dir in temporary_directories:
+                            creation_time = temporary_directories[temp_dir]
+                            if current_time - creation_time > 300:
+                                shutil.rmtree(temp_dir, ignore_errors=True)
+                                del temporary_directories[temp_dir]
+                    except Exception as e:
+                        print(f"Error removing temp dir {temp_dir}: {e}")
+                
                 background_tasks.add_task(cleanup_task)
+                background_tasks.add_task(remove_temp_dir)
                 
             except Exception as e:
                 update_progress(task_id, 0, f"error: {str(e)}")
@@ -471,3 +483,4 @@ async def preview_video_frames(
         except Exception:
             pass
         raise HTTPException(status_code=500, detail=str(e))
+    
