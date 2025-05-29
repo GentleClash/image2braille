@@ -263,7 +263,7 @@
                 
                 // Lock body scroll
                 document.body.style.overflow = 'hidden';
-                const dataUrl = '';
+                const dataUrl = 'https://raw.githubusercontent.com/GentleClash/image2braille/refs/heads/main/static/special_fruit.txt';
                 
                 try {
                     const response = await fetch(dataUrl);
@@ -275,7 +275,7 @@
                     if (!base64Data || base64Data.trim() === '') {
                         throw new Error('Received empty data from server');
                     }
-                    
+
                     createVideoPlayer(base64Data.trim(), overlay);
                 } catch (error) {
                     overlay.innerHTML = `
