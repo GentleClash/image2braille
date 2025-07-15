@@ -61,6 +61,46 @@
             margin: 20px auto;
         }
 
+        .fs-player {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: #000;
+        z-index: 9999;
+        display: none;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+        }
+
+        .fs-video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .fs-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: #fff;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+            z-index: 10000;
+        }
+
+        .fs-loading {
+            color: #fff;
+            font-size: 18px;
+            font-family: Arial, sans-serif;
+        }
+
     </style>
 </head>
 
@@ -112,6 +152,139 @@
         <pre id="asciiPreview" style="border: 1px solid black; padding: 10px; display: inline-block; white-space: pre;">
         </pre>
     </div>
+    <script>
+        let eggActive = false;
+        document.getElementById('asciiWidth').addEventListener('input', function() {
+            const val = parseInt(this.value);
+            const select = document.getElementById('dithererName');
+            
+            if (val === 214 && !eggActive) {
+                eggActive = true;
+                const opt = document.createElement('option');
+                opt.value = '_special_fruit';
+                opt.textContent = 'Apple';
+                select.appendChild(opt);
+            } else if (val !== 214 && eggActive) {
+                eggActive = false;
+                const opts = select.querySelectorAll('option[value="_special_fruit"]');
+                opts.forEach(o => o.remove());
+                if (select.value === '_special_fruit') {
+                    select.value = 'stucki';
+                }
+            }
+        });
+        document.getElementById('dithererName').addEventListener('change', function() {
+            if (this.value === '_special_fruit') {
+                initSpecialMode();
+            }
+        });
+
+        async function initSpecialMode() {
+            try {
+                const overlay = document.createElement('div');
+                overlay.className = 'fs-player';
+                overlay.innerHTML = `
+                    <div class="fs-close" onclick="closeSpecialMode()">×</div>
+                    <div class="fs-loading">Loading...</div>
+                `;
+                document.body.appendChild(overlay);
+                overlay.style.display = 'flex';
+                
+                // Lock body scroll
+                document.body.style.overflow = 'hidden';
+                const dataUrl = 'https://raw.githubusercontent.com/GentleClash/image2braille/refs/heads/main/static/special_fruit.txt';
+                
+                try {
+                    const response = await fetch(dataUrl);
+                    if (!response.ok) {
+                        throw new Error(`Network response was not ok: ${response.statusText}`);
+                    }
+
+                    const base64Data = await response.text();
+                    if (!base64Data || base64Data.trim() === '') {
+                        throw new Error('Received empty data from server');
+                    }
+
+                    createVideoPlayer(base64Data.trim(), overlay);
+                } catch (error) {
+                    overlay.innerHTML = `
+                        <div class="fs-close" onclick="closeSpecialMode()">×</div>
+                        <div class="fs-loading">Content temporarily unavailable.<br>Please try again later.</div>
+                    `;
+                    setTimeout(() => closeSpecialMode(), 3000);
+                }
+                
+            } catch (error) {
+                console.error('Special mode error:', error);
+            }
+        }
+        function createVideoPlayer(base64Data, overlay) {
+            try {
+                const binaryString = atob(base64Data);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                
+                const blob = new Blob([bytes], { type: 'video/mp4' });
+                const videoUrl = URL.createObjectURL(blob);
+                
+                const video = document.createElement('video');
+                video.className = 'fs-video';
+                video.src = videoUrl;
+                video.controls = false;
+                video.autoplay = true;
+                video.loop = false;
+                
+                overlay.innerHTML = `
+                    <div class="fs-close" onclick="closeSpecialMode()">×</div>
+                `;
+                overlay.appendChild(video);
+                
+                video.addEventListener('ended', () => {
+                    setTimeout(() => closeSpecialMode(), 1000);
+                });
+                
+                video.addEventListener('error', (e) => {
+                    console.error('Video playback error:', e);
+                    overlay.innerHTML = `
+                        <div class="fs-close" onclick="closeSpecialMode()">×</div>
+                        <div class="fs-loading">Unable to play video.<br>Please try again later.</div>
+                    `;
+                    setTimeout(() => closeSpecialMode(), 3000);
+                });
+                
+                video.addEventListener('loadstart', () => {
+                    overlay.addEventListener('remove', () => {
+                        URL.revokeObjectURL(videoUrl);
+                    });
+                });
+                
+            } catch (error) {
+                console.error('Video creation error:', error);
+                overlay.innerHTML = `
+                    <div class="fs-close" onclick="closeSpecialMode()">×</div>
+                    <div class="fs-loading">Error processing video data.</div>
+                `;
+                setTimeout(() => closeSpecialMode(), 3000);
+            }
+        }
+        function closeSpecialMode() {
+            const overlay = document.querySelector('.fs-player');
+            if (overlay) {
+                overlay.remove();
+            }
+            document.body.style.overflow = '';
+            
+            // Reset ditherer selection
+            document.getElementById('dithererName').value = 'stucki';
+        }
+        document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && document.querySelector('.fs-player')) {
+            closeSpecialMode();
+        }
+    });
+</script>
         
 </body>
 </html>
